@@ -7,6 +7,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/markets', label: 'Markets' },
+  { href: '/portfolio', label: 'Portfolio' },
 ]
 
 export function AppHeader() {
