@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 
 type MarketCategory = 'All' | 'Nigerian Macro' | 'African & EM Macro' | 'Global Macro'
@@ -264,9 +265,9 @@ export function MarketsExplorer() {
                   </div>
                 </div>
 
-                <button type="button" className="button button-primary market-trade-button">
+                <Link href={`/markets/${market.id}`} className="button button-primary market-trade-button">
                   Trade
-                </button>
+                </Link>
               </article>
             ))}
           </div>
