@@ -1,8 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-
-type Theme = 'light' | 'dark'
+import { resolveInitialTheme, type Theme, THEME_STORAGE_KEY } from '@/lib/theme'
 
 const ThemeContext = createContext<{
   theme: Theme
@@ -10,16 +9,12 @@ const ThemeContext = createContext<{
 }>({ theme: 'light', toggle: () => {} })
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light')
-
-  useEffect(() => {
-    const stored = localStorage.getItem('afromarkets-theme') as Theme | null
-    if (stored) setTheme(stored)
-  }, [])
+  const [theme, setTheme] = useState<Theme>(resolveInitialTheme)
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('afromarkets-theme', theme)
+    document.documentElement.style.colorScheme = theme
+    localStorage.setItem(THEME_STORAGE_KEY, theme)
 
     document.documentElement.classList.add('theme-switching')
     const timer = window.setTimeout(() => {
@@ -30,7 +25,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme])
 
   const toggle = () => {
-    document.documentElement.classList.add('theme-switching')
     setTheme(t => t === 'light' ? 'dark' : 'light')
   }
 

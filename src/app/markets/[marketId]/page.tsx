@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
-import { AppFooter } from '@/components/app-footer'
-import { AppHeader } from '@/components/app-header'
 import { MarketDetailView, type MarketAiRationale, type MarketDetailData } from '@/components/market-detail-view'
+import { RouteTransition } from '@/components/route-transition'
 
 type DetailResponse = {
   success: boolean
@@ -68,9 +67,6 @@ async function getMarketDetail(marketId: string) {
   if (!detailPayload.success || !detailPayload.data) notFound()
 
   const market = detailPayload.data.market
-  const now = Date.now()
-  const closesAtTime = new Date(market.closes_at).getTime()
-  const computedHoursRemaining = Math.max(0, Math.round((closesAtTime - now) / 36e5))
 
   const normalizedMarket: MarketDetailData = {
     id: market.id,
@@ -83,7 +79,6 @@ async function getMarketDetail(marketId: string) {
     totalNoUsdc: market.total_no_usdc,
     totalVolumeUsdc: market.total_yes_usdc + market.total_no_usdc,
     closesAt: market.closes_at,
-    hoursRemaining: computedHoursRemaining,
     resolutionCriteria: market.resolution_criteria,
     sourceOfTruth: market.source_of_truth,
     orderBook: {
@@ -114,10 +109,10 @@ export default async function MarketDetailPage(props: PageProps<'/markets/[marke
   const { market, rationale } = await getMarketDetail(marketId)
 
   return (
-    <main className="landing-shell landing-shell-page">
-      <AppHeader />
-      <MarketDetailView market={market} rationale={rationale} />
-      <AppFooter />
-    </main>
+    <RouteTransition>
+      <main className="markets-shell">
+        <MarketDetailView market={market} rationale={rationale} />
+      </main>
+    </RouteTransition>
   )
 }

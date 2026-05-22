@@ -2,50 +2,39 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { BrandLogo } from '@/components/brand-logo'
 import { ThemeToggle } from '@/components/theme-toggle'
-
-const navLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/markets', label: 'Markets' },
-  { href: '/portfolio', label: 'Portfolio' },
-]
+import { getVisiblePrimaryNavLinks, isPrimaryNavLinkActive } from '@/lib/navigation'
 
 export function AppHeader() {
   const pathname = usePathname()
+  const visibleLinks = getVisiblePrimaryNavLinks(pathname)
 
   return (
     <header className="topbar">
       <div className="topbar-branding">
-        <Link href="/" className="brand" aria-label="AfroMarkets home">
-          <span className="brand-mark" />
-          <span className="brand-copy">
-            <span>Afro</span>
-            <span>Markets</span>
-          </span>
-        </Link>
-
-        <nav className="site-nav" aria-label="Primary">
-          {navLinks.map(link => {
-            const isActive = pathname === link.href
-
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`site-nav-link${isActive ? ' site-nav-link-active' : ''}`}
-              >
-                {link.label}
-              </Link>
-            )
-          })}
-        </nav>
+        <BrandLogo />
       </div>
 
+      <nav className="site-nav" aria-label="Primary">
+        {visibleLinks.map(link => {
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`site-nav-link${isPrimaryNavLinkActive(pathname, link.href) ? ' site-nav-link-active' : ''}`}
+            >
+              {link.label}
+            </Link>
+          )
+        })}
+      </nav>
+
       <div className="topbar-actions">
-        <ThemeToggle />
-        <Link href="/" className="button button-primary">
-          Connect Wallet
+        <Link href="/markets" className="button button-primary">
+          Start Trading
         </Link>
+        <ThemeToggle />
       </div>
     </header>
   )

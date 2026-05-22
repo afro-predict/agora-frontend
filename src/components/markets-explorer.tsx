@@ -1,131 +1,48 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
-
-type MarketCategory = 'All' | 'Nigerian Macro' | 'African & EM Macro' | 'Global Macro'
-type SortMode = 'Most Active' | 'Closing Soon' | 'Newest'
-
-type Market = {
-  id: string
-  title: string
-  category: Exclude<MarketCategory, 'All'>
-  badge: string
-  badgeTone: 'gold' | 'teal' | 'coral' | 'slate'
-  yes: number
-  no: number
-  volume: number
-  closesInHours: number
-  createdRank: number
-}
-
-type ApiMarket = {
-  id: string
-  title: string
-  vertical: 'nigerian_macro' | 'african_macro' | 'global_macro'
-  probability_yes: number
-  probability_no: number
-  total_volume_usdc: number
-  hours_remaining: number
-}
-
-type MarketsResponse = {
-  success: boolean
-  data: {
-    markets: ApiMarket[]
-    total: number
-  }
-}
+import { usePathname } from 'next/navigation'
+import { useMemo, useState } from 'react'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { getVisiblePrimaryNavLinks } from '@/lib/navigation'
+import {
+  type Market,
+  type MarketCategory,
+  type SortMode,
+  fetchMarkets,
+  formatClosingDate,
+  formatRemaining,
+  formatVolume,
+} from '@/lib/markets'
 
 const filters: MarketCategory[] = ['All', 'Nigerian Macro', 'African & EM Macro', 'Global Macro']
 const sortOptions: SortMode[] = ['Most Active', 'Closing Soon', 'Newest']
 
 const fallbackMarkets: Market[] = []
 
-function mapVertical(vertical: ApiMarket['vertical']): Market['category'] {
-  if (vertical === 'nigerian_macro') return 'Nigerian Macro'
-  if (vertical === 'african_macro') return 'African & EM Macro'
-  return 'Global Macro'
+type MarketsExplorerProps = {
+  initialMarkets?: Market[]
+  initialLoadError?: string | null
 }
 
-function badgeFromMarket(market: ApiMarket) {
-  if (market.vertical === 'nigerian_macro') {
-    return { badge: 'NG', badgeTone: 'gold' as const }
-  }
-
-  if (market.vertical === 'african_macro') {
-    return { badge: 'AFRICA', badgeTone: 'teal' as const }
-  }
-
-  return { badge: 'GLOBAL', badgeTone: 'coral' as const }
-}
-
-function formatVolume(volume: number) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(volume)
-}
-
-function formatRemaining(hours: number) {
-  const days = Math.floor(hours / 24)
-  const remainderHours = hours % 24
-  return `${days}d ${remainderHours}h`
-}
-
-export function MarketsExplorer() {
+export function MarketsExplorer({ initialMarkets = fallbackMarkets, initialLoadError = null }: MarketsExplorerProps) {
+  const pathname = usePathname()
   const [search, setSearch] = useState('')
   const [activeFilter, setActiveFilter] = useState<MarketCategory>('All')
   const [sortMode, setSortMode] = useState<SortMode>('Most Active')
-  const [loading, setLoading] = useState(true)
-  const [markets, setMarkets] = useState<Market[]>(fallbackMarkets)
+  const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(initialLoadError)
+  const [markets, setMarkets] = useState<Market[]>(initialMarkets)
 
-  useEffect(() => {
-    const controller = new AbortController()
+  async function loadMarkets() {
+    setLoading(true)
+    setLoadError(null)
 
-    async function loadMarkets() {
-      try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
-        if (!baseUrl) throw new Error('Missing API base URL')
-
-        const response = await fetch(`${baseUrl}/markets`, {
-          signal: controller.signal,
-          cache: 'no-store',
-        })
-
-        if (!response.ok) throw new Error(`Failed to fetch markets: ${response.status}`)
-
-        const payload = (await response.json()) as MarketsResponse
-        const nextMarkets = payload.data.markets.map((market, index) => {
-          const badge = badgeFromMarket(market)
-
-          return {
-            id: market.id,
-            title: market.title,
-            category: mapVertical(market.vertical),
-            badge: badge.badge,
-            badgeTone: badge.badgeTone,
-            yes: Math.round(market.probability_yes * 100),
-            no: Math.round(market.probability_no * 100),
-            volume: market.total_volume_usdc,
-            closesInHours: market.hours_remaining,
-            createdRank: index,
-          }
-        })
-
-        setMarkets(nextMarkets)
-      } catch {
-        setMarkets(fallbackMarkets)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadMarkets()
-
-    return () => controller.abort()
-  }, [])
+    const result = await fetchMarkets()
+    setMarkets(result.markets)
+    setLoadError(result.error)
+    setLoading(false)
+  }
 
   const filteredMarkets = useMemo(() => {
     const normalized = search.trim().toLowerCase()
@@ -145,67 +62,102 @@ export function MarketsExplorer() {
       if (sortMode === 'Newest') return a.createdRank - b.createdRank
       return b.volume - a.volume
     })
-  }, [activeFilter, search, sortMode])
+  }, [activeFilter, markets, search, sortMode])
+  const visibleNavLinks = getVisiblePrimaryNavLinks(pathname)
 
   return (
-    <section className="markets-page">
-      <div className="markets-page-header">
-        <p className="section-kicker">Live board</p>
-        <h1>Markets</h1>
-        <p className="markets-page-subtitle">
-          Live prediction markets on African macro events.
-        </p>
-      </div>
+    <section className="markets-blackout">
+      <header className="markets-blackout-topbar">
+        <div className="minimal-topbar markets-blackout-topbar-shell">
+          <Link href="/" className="minimal-brand" aria-label="AfroMarkets home">
+            <span className="minimal-brand-mark">
+              <svg viewBox="0 0 44 44" aria-hidden="true">
+                <circle cx="22" cy="22" r="17" fill="none" stroke="currentColor" strokeWidth="4" opacity="0.92" />
+                <path
+                  d="M28.5 15.5A9.8 9.8 0 0 0 22 13c-5 0-9 4-9 9s4 9 9 9a9.7 9.7 0 0 0 6.4-2.4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                />
+                <path d="M18.5 22h10.5" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+              </svg>
+            </span>
+            <span className="minimal-brand-text">AfroMarkets</span>
+          </Link>
 
-      <div className="markets-toolbar">
-        <div className="markets-search">
-          <label htmlFor="markets-search" className="sr-only">
-            Search markets
-          </label>
-          <input
-            id="markets-search"
-            type="search"
-            value={search}
-            onChange={event => setSearch(event.target.value)}
-            placeholder="Search markets"
-            className="markets-search-input"
-          />
-        </div>
-
-        <div className="markets-sort">
-          <select
-            id="markets-sort"
-            className="markets-sort-select"
-            value={sortMode}
-            onChange={event => setSortMode(event.target.value as SortMode)}
-          >
-            {sortOptions.map(option => (
-              <option key={option} value={option}>
-                {option}
-              </option>
+          <nav className="minimal-nav" aria-label="Markets navigation">
+            {visibleNavLinks.map(link => (
+              <Link key={`${link.href}-${link.label}`} href={link.href}>
+                {link.label}
+              </Link>
             ))}
-          </select>
+          </nav>
+
+          <div className="minimal-topbar-actions">
+            <Link href="/markets" className="minimal-account-link markets-blackout-connect">
+              Connect Wallet
+            </Link>
+
+            <ThemeToggle />
+          </div>
+        </div>
+      </header>
+
+      <section className="markets-blackout-hero">
+        <div className="markets-blackout-hero-card">
+          <div className="markets-blackout-hero-header">
+            <h1>All markets</h1>
+
+            <div className="markets-blackout-hero-controls">
+              <div className="markets-blackout-control-stack">
+                <input
+                  id="markets-search"
+                  type="search"
+                  value={search}
+                  onChange={event => setSearch(event.target.value)}
+                  placeholder="Search markets..."
+                  className="markets-blackout-search-input"
+                />
+
+                <select
+                  id="markets-sort"
+                  className="markets-blackout-sort-select"
+                  value={sortMode}
+                  onChange={event => setSortMode(event.target.value as SortMode)}
+                >
+                  {sortOptions.map(option => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="markets-blackout-filter-rail" aria-label="Market filters">
+        <div className="markets-blackout-filters">
+          {filters.map(filter => (
+            <button
+              key={filter}
+              type="button"
+              className={`markets-blackout-filter${activeFilter === filter ? ' markets-blackout-filter-active' : ''}`}
+              onClick={() => setActiveFilter(filter)}
+            >
+              {filter}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="markets-filters-panel" aria-label="Market filters">
-        {filters.map(filter => (
-          <button
-            key={filter}
-            type="button"
-            className={`markets-filter-tab${activeFilter === filter ? ' markets-filter-tab-active' : ''}`}
-            onClick={() => setActiveFilter(filter)}
-          >
-            {filter}
-          </button>
-        ))}
-      </div>
-
-      <div className="markets-results">
+      <div className="markets-blackout-results">
         {loading ? (
-          <div className="markets-grid" aria-label="Loading markets">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <article key={index} className="market-tile market-tile-skeleton" aria-hidden="true">
+          <div className="markets-blackout-grid" aria-label="Loading markets">
+            {Array.from({ length: 9 }).map((_, index) => (
+              <article key={index} className="market-blackout-card market-tile-skeleton" aria-hidden="true">
                 <div className="skeleton-line skeleton-line-badge" />
                 <div className="skeleton-line skeleton-line-title" />
                 <div className="skeleton-line skeleton-line-title-short" />
@@ -221,54 +173,55 @@ export function MarketsExplorer() {
               </article>
             ))}
           </div>
+        ) : loadError ? (
+          <div className="markets-blackout-empty" role="alert">
+            <h2>Could not load markets</h2>
+            <p>{loadError}</p>
+            <button type="button" className="button button-primary" onClick={loadMarkets} disabled={loading}>
+              Retry
+            </button>
+          </div>
         ) : filteredMarkets.length === 0 ? (
-          <div className="markets-empty">
+          <div className="markets-blackout-empty">
             <h2>No markets found</h2>
-            <p>Try a different search term or switch to another macro filter.</p>
+            <p>Try another search term or switch macro categories.</p>
           </div>
         ) : (
-          <div className="markets-grid">
+          <div className="markets-blackout-grid">
             {filteredMarkets.map(market => (
-              <article key={market.id} className="market-tile">
-                <div className={`market-tile-badge market-tile-badge-${market.badgeTone}`}>
-                  {market.badge}
-                </div>
-
-                <h2>{market.title}</h2>
-
-                <div className="market-probability">
-                  <div className="market-probability-bar">
-                    <span className="market-probability-yes" style={{ width: `${market.yes}%` }} />
-                    <span className="market-probability-no" style={{ width: `${market.no}%` }} />
+              <Link key={market.id} href={`/markets/${market.id}`} className="market-blackout-card-link">
+                <article className="market-blackout-card">
+                  <div className="market-blackout-card-top">
+                    <div className={`market-tile-badge market-tile-badge-${market.badgeTone}`}>
+                      {market.badge}
+                    </div>
+                    <span className="market-blackout-card-close">{formatRemaining(market.closesInHours)}</span>
                   </div>
 
-                  <div className="market-probability-stats">
+                  <h2>{market.title}</h2>
+
+                  <div className="market-blackout-probability">
                     <div>
-                      <span>Yes</span>
                       <strong>{market.yes}%</strong>
+                      <span>Yes</span>
                     </div>
                     <div>
-                      <span>No</span>
                       <strong>{market.no}%</strong>
+                      <span>No</span>
                     </div>
                   </div>
-                </div>
 
-                <div className="market-tile-meta">
-                  <div>
-                    <span>Volume</span>
-                    <strong>{formatVolume(market.volume)} USDC</strong>
+                  <div className="market-blackout-probability-bar">
+                    <span className="market-blackout-probability-yes" style={{ width: `${market.yes}%` }} />
+                    <span className="market-blackout-probability-no" style={{ width: `${market.no}%` }} />
                   </div>
-                  <div>
-                    <span>Closes</span>
-                    <strong>{formatRemaining(market.closesInHours)}</strong>
-                  </div>
-                </div>
 
-                <Link href={`/markets/${market.id}`} className="button button-primary market-trade-button">
-                  Trade
-                </Link>
-              </article>
+                  <div className="market-blackout-meta">
+                    <span>{formatVolume(market.volume)} vol.</span>
+                    <span>Closes {formatClosingDate(market.closesAt)}</span>
+                  </div>
+                </article>
+              </Link>
             ))}
           </div>
         )}

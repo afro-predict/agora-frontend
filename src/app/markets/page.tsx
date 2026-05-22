@@ -1,13 +1,15 @@
-import { AppFooter } from '@/components/app-footer'
-import { AppHeader } from '@/components/app-header'
 import { MarketsExplorer } from '@/components/markets-explorer'
+import { RouteTransition } from '@/components/route-transition'
+import { fetchMarkets } from '@/lib/markets'
 
-export default function MarketsPage() {
+export default async function MarketsPage() {
+  const { markets, error } = await fetchMarkets()
+
   return (
-    <main className="landing-shell landing-shell-page">
-      <AppHeader />
-      <MarketsExplorer />
-      <AppFooter />
-    </main>
+    <RouteTransition>
+      <main className="markets-shell">
+        <MarketsExplorer initialMarkets={markets} initialLoadError={error} />
+      </main>
+    </RouteTransition>
   )
 }

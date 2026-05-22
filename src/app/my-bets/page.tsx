@@ -1,11 +1,11 @@
-import { PortfolioDashboard } from '@/components/portfolio-dashboard'
+import { MyBetsDashboard } from '@/components/my-bets-dashboard'
 import { RouteTransition } from '@/components/route-transition'
 
-export default function PortfolioPage() {
+export default function MyBetsPage() {
   return (
     <RouteTransition>
       <main className="markets-shell">
-        <PortfolioDashboard />
+        <MyBetsDashboard />
       </main>
     </RouteTransition>
   )

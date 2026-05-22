@@ -1,65 +1,89 @@
 import Link from 'next/link'
-import { AppFooter } from '@/components/app-footer'
-import { AppHeader } from '@/components/app-header'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { RouteTransition } from '@/components/route-transition'
+
+const floatingCards = [
+  { title: 'Nigeria CPI above 30%', value: 'Yes 61c', position: 'card-a' },
+  { title: 'BTC above 80k by June', value: 'No 47c', position: 'card-b' },
+  { title: 'AFCON 2027 Winner', value: 'Morocco 40%', position: 'card-c' },
+  { title: 'Naira below 1,700/$', value: 'Yes 36c', position: 'card-d' },
+  { title: 'Fed cuts before CBN', value: 'Yes 48c', position: 'card-e' },
+  { title: 'Brent above $95', value: 'Yes 54c', position: 'card-f' },
+]
 
 export default function HomePage() {
   return (
-    <main className="landing-shell">
-      <AppHeader />
+    <RouteTransition>
+      <main className="landing-shell landing-shell-minimal">
+        <section className="minimal-hero">
+          <div className="minimal-stage">
+            <div className="minimal-fog minimal-fog-top" />
+            <div className="minimal-fog minimal-fog-bottom" />
+            <div className="minimal-grid-lines" aria-hidden="true" />
 
-      <section className="hero">
-        <div className="hero-copy reveal reveal-rise">
-          <p className="eyebrow">Africa&apos;s Prediction &amp; Hedging Market</p>
-          <h1>
-            Predict Africa.
-            <br />
-            Hedge Tomorrow.
-          </h1>
-          <p className="hero-lede">
-            AfroMarkets is a prediction market for African macro events. Trade with USDC.
-            Built for insight. Backed by the crowd.
-          </p>
+            <header className="minimal-topbar">
+              <Link href="/" className="minimal-brand" aria-label="AfroMarkets home">
+                <span className="minimal-brand-mark">
+                  <svg viewBox="0 0 44 44" aria-hidden="true">
+                    <circle cx="22" cy="22" r="17" fill="none" stroke="currentColor" strokeWidth="4" opacity="0.92" />
+                    <path
+                      d="M28.5 15.5A9.8 9.8 0 0 0 22 13c-5 0-9 4-9 9s4 9 9 9a9.7 9.7 0 0 0 6.4-2.4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                    />
+                    <path d="M18.5 22h10.5" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+                  </svg>
+                </span>
+                <span className="minimal-brand-text">AfroMarkets</span>
+              </Link>
 
-          <div className="hero-actions">
-            <Link href="/markets" className="button button-primary">
-              Explore Markets
-            </Link>
-          </div>
-        </div>
+              <nav className="minimal-nav" aria-label="Landing navigation">
+                <Link href="/markets">Markets</Link>
+                <Link href="/portfolio">Portfolio</Link>
+                <Link href="/my-bets">My Bets</Link>
+              </nav>
 
-        <div id="hero" className="hero-visual reveal reveal-float" aria-hidden="true">
-          <div className="hero-scene">
-            <div className="hero-glow" />
-            <img className="hero-art" src="/hero-landscape.svg" alt="" />
-            <div className="hero-scene-mask" />
-          </div>
-
-          <article className="hero-card reveal reveal-delay-2">
-            <div className="hero-card-pill">Most active market</div>
-            <h2>USD/NGN to cross NGN 2,000 before July 31, 2025?</h2>
-            <div className="hero-card-stats">
-              <div>
-                <span>Yes</span>
-                <strong>62%</strong>
+              <div className="minimal-topbar-actions">
+                <Link href="/markets" className="minimal-account-link">
+                  Create Account
+                </Link>
+                <ThemeToggle />
               </div>
-              <div>
-                <span>No</span>
-                <strong>38%</strong>
+            </header>
+
+            <div className="minimal-card-field" aria-hidden="true">
+              {floatingCards.map(card => (
+                <article key={card.title} className={`minimal-market-card ${card.position}`}>
+                  <strong>{card.title}</strong>
+                  <span>{card.value}</span>
+                </article>
+              ))}
+            </div>
+
+            <div className="minimal-hero-copy">
+              <span className="minimal-pill">Unlock African market signal</span>
+              <h1>One-click for African market defense</h1>
+              <p>
+                Dive into politics, FX, and macro narratives where market intelligence meets financial
+                conviction.
+              </p>
+
+              <div className="minimal-actions">
+                <Link href="/markets" className="button button-secondary">
+                  Open App
+                </Link>
+                <Link href="/markets" className="button button-primary">
+                  Discover More
+                </Link>
               </div>
             </div>
-            <div className="hero-chart">
-              <span className="chart-line chart-line-gold" />
-              <span className="chart-line chart-line-fade" />
-            </div>
-            <div className="hero-card-meta">
-              <span>$124,560 Vol.</span>
-              <span>Closes in 21d 14h</span>
-            </div>
-          </article>
-        </div>
-      </section>
 
-      <AppFooter />
-    </main>
+            <div className="minimal-horizon">AfroMarkets horizon</div>
+          </div>
+        </section>
+      </main>
+    </RouteTransition>
   )
 }

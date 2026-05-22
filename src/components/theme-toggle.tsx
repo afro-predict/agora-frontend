@@ -1,10 +1,32 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useTheme } from '@/components/theme-provider'
 
 export function ThemeToggle() {
   const { theme, toggle } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setMounted(true))
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [])
+
   const isLight = theme === 'light'
+
+  if (!mounted) {
+    return (
+      <button
+        type="button"
+        className="theme-toggle"
+        aria-label="Toggle theme"
+        aria-pressed="false"
+        title="Toggle theme"
+        disabled
+      />
+    )
+  }
 
   return (
     <button
@@ -12,6 +34,8 @@ export function ThemeToggle() {
       className="theme-toggle"
       onClick={toggle}
       aria-label={isLight ? 'Switch to dark mode' : 'Switch to light mode'}
+      aria-pressed={theme === 'dark'}
+      title={isLight ? 'Switch to dark mode' : 'Switch to light mode'}
     >
       {isLight ? (
         <svg viewBox="0 0 24 24" aria-hidden="true">
