@@ -64,7 +64,7 @@ export default function HomePage() {
 
             <div className="minimal-hero-copy">
               <span className="minimal-pill">Unlock African market signal</span>
-              <h1>One-click for African market defense</h1>
+              <h1>Predict Africa, Hedge Tomorrow</h1>
               <p>
                 Dive into politics, FX, and macro narratives where market intelligence meets financial
                 conviction.
@@ -74,7 +74,7 @@ export default function HomePage() {
                 <Link href="/markets" className="button button-secondary">
                   Open App
                 </Link>
-                <Link href="/markets" className="button button-primary">
+                <Link href="/discover" className="button button-primary">
                   Discover More
                 </Link>
               </div>
