@@ -9,10 +9,6 @@ export const primaryNavLinks: PrimaryNavLink[] = [
   { href: '/my-bets', label: 'My Bets' },
 ]
 
-export function isPrimaryNavLinkActive(pathname: string, href: PrimaryNavLink['href']) {
-  return pathname === href || pathname.startsWith(`${href}/`)
-}
-
 export function shouldHidePrimaryNavLink(pathname: string, href: PrimaryNavLink['href']) {
   return pathname === href
 }

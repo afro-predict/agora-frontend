@@ -4,6 +4,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { WalletButton } from '@/components/wallet-button'
+import { useWallet } from '@/lib/wallet'
+import { placeBet, type BetPlacementResponse } from '@/lib/bets'
 import { getVisiblePrimaryNavLinks } from '@/lib/navigation'
 
 type TradeSide = 'yes' | 'no'
@@ -142,17 +145,74 @@ function kellySuggestion(price: number, side: TradeSide, confidence: string | un
 
 export function MarketDetailView({ market, rationale }: Props) {
   const pathname = usePathname()
+  const [marketData, setMarketData] = useState(market)
   const [side, setSide] = useState<TradeSide>('yes')
   const [timeframe, setTimeframe] = useState<Timeframe>('All')
   const [amount, setAmount] = useState(50)
   const [activeTab, setActiveTab] = useState<DetailTab>('rules')
+  const [isPlacingBet, setIsPlacingBet] = useState(false)
+  const [betError, setBetError] = useState<string | null>(null)
+  const [confirmationData, setConfirmationData] = useState<BetPlacementResponse['data'] | null>(null)
+  const { isConnected, address: walletAddress, connect } = useWallet()
 
-  const yesSeries = useMemo(() => generateSeries(market.probabilityYes, timeframe), [market.probabilityYes, timeframe])
-  const label = marketLabel(market.vertical)
-  const sharePrice = side === 'yes' ? market.probabilityYes : market.probabilityNo
+  async function refreshMarket() {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+    if (!baseUrl) return
+    try {
+      const response = await fetch(`${baseUrl}/markets/${marketData.id}`, { cache: 'no-store' })
+      if (response.ok) {
+        const payload = await response.json()
+        if (payload.success && payload.data?.market) {
+          const m = payload.data.market
+          setMarketData({
+            ...marketData,
+            probabilityYes: m.probability_yes,
+            probabilityNo: m.probability_no,
+            totalYesUsdc: m.total_yes_usdc,
+            totalNoUsdc: m.total_no_usdc,
+            totalVolumeUsdc: m.total_yes_usdc + m.total_no_usdc,
+            closesAt: m.closes_at,
+          })
+        }
+      }
+    } catch {
+      // Background refresh failed — market data stays unchanged
+    }
+  }
+
+  async function handlePlaceBet(outcome: TradeSide) {
+    if (!isConnected || !walletAddress) {
+      await connect()
+      return
+    }
+
+    setBetError(null)
+    setIsPlacingBet(true)
+
+    const result = await placeBet({
+      market_id: marketData.id,
+      outcome,
+      amount_usdc: String(amount),
+      wallet_address: walletAddress,
+    })
+
+    setIsPlacingBet(false)
+
+    if (!result.success) {
+      setBetError(result.error ?? 'Failed to place bet')
+      return
+    }
+
+    setConfirmationData(result.data ?? null)
+    await refreshMarket()
+  }
+
+  const yesSeries = useMemo(() => generateSeries(marketData.probabilityYes, timeframe), [marketData.probabilityYes, timeframe])
+  const label = marketLabel(marketData.vertical)
+  const sharePrice = side === 'yes' ? marketData.probabilityYes : marketData.probabilityNo
   const shares = amount / Math.max(sharePrice, 0.01)
   const payout = shares
-  const kelly = kellySuggestion(market.probabilityYes, side, rationale?.confidence)
+  const kelly = kellySuggestion(marketData.probabilityYes, side, rationale?.confidence)
   const visibleNavLinks = getVisiblePrimaryNavLinks(pathname)
 
   return (
@@ -185,9 +245,7 @@ export function MarketDetailView({ market, rationale }: Props) {
           </nav>
 
           <div className="minimal-topbar-actions">
-            <Link href="/markets" className="minimal-account-link markets-blackout-connect">
-              Connect Wallet
-            </Link>
+            <WalletButton />
 
             <ThemeToggle />
           </div>
@@ -206,18 +264,18 @@ export function MarketDetailView({ market, rationale }: Props) {
                   <span className={`market-tile-badge market-tile-badge-${label.tone}`}>{label.label}</span>
                   <span>{label.name}</span>
                 </div>
-                <h1>{market.title}</h1>
+                <h1>{marketData.title}</h1>
               </div>
 
               <div className="market-detail-native-header-tools">
                 <div className="market-detail-native-snapshot">
                   <div>
                     <span>Closes</span>
-                    <strong>{formatDate(market.closesAt)}</strong>
+                    <strong>{formatDate(marketData.closesAt)}</strong>
                   </div>
                   <div>
                     <span>Total volume</span>
-                    <strong>{formatUsd(market.totalVolumeUsdc)}</strong>
+                    <strong>{formatUsd(marketData.totalVolumeUsdc)}</strong>
                   </div>
                 </div>
 
@@ -240,7 +298,7 @@ export function MarketDetailView({ market, rationale }: Props) {
               <div className="market-detail-native-chart-head">
                 <div>
                   <p className="section-kicker">Live pricing</p>
-                  <h2>{Math.round(market.probabilityYes * 100)}% yes conviction</h2>
+                  <h2>{Math.round(marketData.probabilityYes * 100)}% yes conviction</h2>
                 </div>
 
                 <div className="market-detail-native-timeframes" aria-label="Chart timeframe">
@@ -260,18 +318,18 @@ export function MarketDetailView({ market, rationale }: Props) {
               <div className="market-detail-native-legend">
                 <div>
                   <span className="market-detail-native-legend-dot market-detail-native-legend-dot-yes" />
-                  Yes {Math.round(market.probabilityYes * 100)}%
+                  Yes {Math.round(marketData.probabilityYes * 100)}%
                 </div>
                 <div>
                   <span className="market-detail-native-legend-dot market-detail-native-legend-dot-no" />
-                  No {Math.round(market.probabilityNo * 100)}%
+                  No {Math.round(marketData.probabilityNo * 100)}%
                 </div>
               </div>
 
               <div className="market-detail-native-chart-shell">
                 <div className="market-detail-native-chart-meta">
-                  <span>{formatTime(market.closesAt)} close</span>
-                  <span>{formatUsd(market.totalVolumeUsdc)} vol.</span>
+                  <span>{formatTime(marketData.closesAt)} close</span>
+                  <span>{formatUsd(marketData.totalVolumeUsdc)} vol.</span>
                 </div>
 
                 <svg viewBox="0 0 100 100" className="market-detail-native-chart" aria-hidden="true">
@@ -298,13 +356,13 @@ export function MarketDetailView({ market, rationale }: Props) {
               <div className="market-detail-native-board-row">
                 <div>
                   <strong>Yes</strong>
-                  <span>{formatCompact(market.totalYesUsdc)} volume</span>
+                  <span>{formatCompact(marketData.totalYesUsdc)} volume</span>
                 </div>
                 <div className="market-detail-native-board-prob">
-                  <strong>{Math.round(market.probabilityYes * 100)}%</strong>
-                  <span>{formatPrice(market.probabilityYes)}</span>
+                  <strong>{Math.round(marketData.probabilityYes * 100)}%</strong>
+                  <span>{formatPrice(marketData.probabilityYes)}</span>
                 </div>
-                <button type="button" className="market-blackout-buy market-blackout-buy-yes" onClick={() => setSide('yes')}>
+                <button type="button" className="market-blackout-buy market-blackout-buy-yes" onClick={() => { setSide('yes'); if (!isConnected) connect() }}>
                   Place Yes Bet
                 </button>
               </div>
@@ -312,13 +370,13 @@ export function MarketDetailView({ market, rationale }: Props) {
               <div className="market-detail-native-board-row">
                 <div>
                   <strong>No</strong>
-                  <span>{formatCompact(market.totalNoUsdc)} volume</span>
+                  <span>{formatCompact(marketData.totalNoUsdc)} volume</span>
                 </div>
                 <div className="market-detail-native-board-prob">
-                  <strong>{Math.round(market.probabilityNo * 100)}%</strong>
-                  <span>{formatPrice(market.probabilityNo)}</span>
+                  <strong>{Math.round(marketData.probabilityNo * 100)}%</strong>
+                  <span>{formatPrice(marketData.probabilityNo)}</span>
                 </div>
-                <button type="button" className="market-blackout-buy market-blackout-buy-no" onClick={() => setSide('no')}>
+                <button type="button" className="market-blackout-buy market-blackout-buy-no" onClick={() => { setSide('no'); if (!isConnected) connect() }}>
                   Place No Bet
                 </button>
               </div>
@@ -344,8 +402,8 @@ export function MarketDetailView({ market, rationale }: Props) {
 
               {activeTab === 'rules' ? (
                 <div className="market-detail-native-copy">
-                  <p>{market.resolutionCriteria}</p>
-                  <a href={market.sourceOfTruth} target="_blank" rel="noreferrer" className="detail-source-link">
+                  <p>{marketData.resolutionCriteria}</p>
+                  <a href={marketData.sourceOfTruth} target="_blank" rel="noreferrer" className="detail-source-link">
                     Open source of truth
                   </a>
                 </div>
@@ -400,14 +458,14 @@ export function MarketDetailView({ market, rationale }: Props) {
                   className={`detail-trade-side${side === 'yes' ? ' detail-trade-side-active detail-trade-side-yes' : ''}`}
                   onClick={() => setSide('yes')}
                 >
-                  Yes {formatPrice(market.probabilityYes)}
+                  Yes {formatPrice(marketData.probabilityYes)}
                 </button>
                 <button
                   type="button"
                   className={`detail-trade-side${side === 'no' ? ' detail-trade-side-active detail-trade-side-no' : ''}`}
                   onClick={() => setSide('no')}
                 >
-                  No {formatPrice(market.probabilityNo)}
+                  No {formatPrice(marketData.probabilityNo)}
                 </button>
               </div>
 
@@ -450,8 +508,19 @@ export function MarketDetailView({ market, rationale }: Props) {
                 </div>
               </div>
 
-              <button type="button" className="button button-primary detail-trade-submit">
-                PLACE BET
+              {betError && (
+                <div className="bet-error-message" role="alert">
+                  {betError}
+                </div>
+              )}
+
+              <button
+                type="button"
+                className="button button-primary detail-trade-submit"
+                disabled={isPlacingBet}
+                onClick={() => handlePlaceBet(side)}
+              >
+                {isPlacingBet ? 'Placing Bet...' : isConnected ? 'PLACE BET' : 'Connect Wallet to Bet'}
               </button>
             </section>
 
@@ -500,6 +569,55 @@ export function MarketDetailView({ market, rationale }: Props) {
           </aside>
         </div>
       </div>
+
+      {confirmationData && (
+        <div className="bet-confirmation-overlay" onClick={() => setConfirmationData(null)}>
+          <div className="bet-confirmation-modal" onClick={e => e.stopPropagation()}>
+            <div className="bet-confirmation-header">
+              <h2>Bet Placed!</h2>
+              <p>Your position has been opened</p>
+            </div>
+
+            <div className="bet-confirmation-details">
+              <div>
+                <span>Market</span>
+                <strong>{marketData.title}</strong>
+              </div>
+              <div>
+                <span>Side</span>
+                <strong className={confirmationData.outcome === 'yes' ? 'bet-confirmation-yes' : 'bet-confirmation-no'}>
+                  {confirmationData.outcome === 'yes' ? 'Yes' : 'No'}
+                </strong>
+              </div>
+              <div>
+                <span>Amount</span>
+                <strong>{formatUsd(Number(confirmationData.amount_usdc))}</strong>
+              </div>
+              {confirmationData.estimated_payout != null && (
+                <div>
+                  <span>Est. payout</span>
+                  <strong>{formatUsd(confirmationData.estimated_payout)}</strong>
+                </div>
+              )}
+              {confirmationData.shares_received != null && (
+                <div>
+                  <span>Shares received</span>
+                  <strong>{confirmationData.shares_received.toFixed(2)}</strong>
+                </div>
+              )}
+            </div>
+
+            <div className="bet-confirmation-actions">
+              <Link href="/portfolio" className="button button-primary">
+                View Portfolio
+              </Link>
+              <Link href="/markets" className="button button-secondary" onClick={() => setConfirmationData(null)}>
+                Back to Markets
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

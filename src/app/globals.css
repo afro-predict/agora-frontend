@@ -1,4 +1,3 @@
-:root,
 :root {
   --font-lexend: 'Lexend', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
   --font-inter: 'Inter', sans-serif;
@@ -3710,4 +3709,106 @@ button {
     top: 57%;
     right: 7%;
   }
+}
+
+.bet-error-message {
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  color: var(--danger);
+  background: rgba(210, 79, 79, 0.14);
+  line-height: 1.5;
+}
+
+.bet-confirmation-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  padding: 20px;
+}
+
+.bet-confirmation-modal {
+  background: var(--shell-surface);
+  border: 1px solid var(--shell-border);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.bet-confirmation-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.bet-confirmation-header h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: var(--shell-foreground);
+}
+
+.bet-confirmation-header p {
+  font-size: 0.88rem;
+  color: var(--shell-muted);
+  margin: 0;
+}
+
+.bet-confirmation-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid var(--shell-border);
+  border-bottom: 1px solid var(--shell-border);
+  margin-bottom: 20px;
+}
+
+.bet-confirmation-details > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bet-confirmation-details > div > span {
+  font-size: 0.84rem;
+  color: var(--shell-muted);
+}
+
+.bet-confirmation-details > div > strong {
+  font-size: 0.88rem;
+  color: var(--shell-foreground);
+  text-align: right;
+  max-width: 60%;
+}
+
+.bet-confirmation-yes {
+  color: #42c47c;
+}
+
+.bet-confirmation-no {
+  color: #e05e5e;
+}
+
+.bet-confirmation-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.bet-confirmation-actions .button {
+  flex: 1;
+  text-align: center;
+}
+
+.wallet-address-display {
+  font-family: ui-monospace, 'SF Mono', monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
 }

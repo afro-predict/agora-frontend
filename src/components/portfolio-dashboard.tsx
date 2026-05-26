@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { WalletButton } from '@/components/wallet-button'
+import { useWallet, truncateAddress } from '@/lib/wallet'
 import { getVisiblePrimaryNavLinks } from '@/lib/navigation'
 
 type BalanceBucket = {
@@ -69,6 +71,7 @@ function formatUsd(value: number) {
 
 export function PortfolioDashboard() {
   const pathname = usePathname()
+  const { address: walletAddress, isConnected } = useWallet()
   const visibleNavLinks = getVisiblePrimaryNavLinks(pathname)
 
   return (
@@ -101,9 +104,7 @@ export function PortfolioDashboard() {
           </nav>
 
           <div className="minimal-topbar-actions">
-            <Link href="/markets" className="minimal-account-link markets-blackout-connect">
-              Connect Wallet
-            </Link>
+            <WalletButton />
 
             <ThemeToggle />
           </div>
@@ -123,7 +124,7 @@ export function PortfolioDashboard() {
 
           <div className="portfolio-native-wallet">
             <span>Connected wallet</span>
-            <strong>{demoWallet}</strong>
+            <strong>{isConnected && walletAddress ? truncateAddress(walletAddress) : demoWallet}</strong>
           </div>
         </section>
 

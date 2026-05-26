@@ -4,6 +4,7 @@ import localFont from 'next/font/local'
 import Script from 'next/script'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
+import { WalletProvider } from '@/lib/wallet'
 import { getThemeBootstrapScript } from '@/lib/theme'
 
 const fonseca = localFont({
@@ -35,7 +36,9 @@ export default function RootLayout({
       </head>
       <body className={fonseca.variable}>
         <ThemeProvider>
-          {children}
+          <WalletProvider>
+            {children}
+          </WalletProvider>
         </ThemeProvider>
       </body>
     </html>

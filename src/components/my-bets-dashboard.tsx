@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { WalletButton } from '@/components/wallet-button'
+import { useWallet, truncateAddress } from '@/lib/wallet'
 import { getVisiblePrimaryNavLinks } from '@/lib/navigation'
 
 type BetStatus = 'open' | 'won' | 'lost'
@@ -115,6 +117,7 @@ function formatDate(value: string) {
 
 export function MyBetsDashboard() {
   const pathname = usePathname()
+  const { address: walletAddress, isConnected } = useWallet()
   const openBets = bets.filter(bet => bet.status === 'open')
   const settledBets = bets.filter(bet => bet.status !== 'open')
   const totalStaked = bets.reduce((sum, bet) => sum + bet.amount, 0)
@@ -162,9 +165,7 @@ export function MyBetsDashboard() {
           </nav>
 
           <div className="minimal-topbar-actions">
-            <Link href="/markets" className="minimal-account-link markets-blackout-connect">
-              Connect Wallet
-            </Link>
+            <WalletButton />
 
             <ThemeToggle />
           </div>
@@ -181,7 +182,7 @@ export function MyBetsDashboard() {
 
           <div className="portfolio-native-wallet">
             <span>Wallet</span>
-            <strong>{demoWallet}</strong>
+            <strong>{isConnected && walletAddress ? truncateAddress(walletAddress) : demoWallet}</strong>
           </div>
         </section>
 

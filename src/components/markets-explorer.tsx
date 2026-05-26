@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { WalletButton } from '@/components/wallet-button'
 import { getVisiblePrimaryNavLinks } from '@/lib/navigation'
 import {
   type Market,
@@ -95,9 +96,7 @@ export function MarketsExplorer({ initialMarkets = fallbackMarkets, initialLoadE
           </nav>
 
           <div className="minimal-topbar-actions">
-            <Link href="/markets" className="minimal-account-link markets-blackout-connect">
-              Connect Wallet
-            </Link>
+            <WalletButton />
 
             <ThemeToggle />
           </div>
@@ -124,7 +123,12 @@ export function MarketsExplorer({ initialMarkets = fallbackMarkets, initialLoadE
                   id="markets-sort"
                   className="markets-blackout-sort-select"
                   value={sortMode}
-                  onChange={event => setSortMode(event.target.value as SortMode)}
+                  onChange={event => {
+                    const value = event.target.value
+                    if (sortOptions.includes(value as SortMode)) {
+                      setSortMode(value as SortMode)
+                    }
+                  }}
                 >
                   {sortOptions.map(option => (
                     <option key={option} value={option}>

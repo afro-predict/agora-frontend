@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { WalletButton } from '@/components/wallet-button'
 import { getVisiblePrimaryNavLinks } from '@/lib/navigation'
 
 const newlyListed = [
@@ -150,9 +151,7 @@ export function DiscoverMore() {
           </nav>
 
           <div className="minimal-topbar-actions">
-            <Link href="/markets" className="minimal-account-link markets-blackout-connect">
-              Connect Wallet
-            </Link>
+            <WalletButton />
             <ThemeToggle />
           </div>
         </div>
